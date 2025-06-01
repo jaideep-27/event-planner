@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { generateEventPlan, EventDetails } from '../services/ai';
 
 
 const EventPlan = () => {
-  const [plan, setPlan] = useState<string>('');
+  // const [plan, setPlan] = useState<string>(''); // Removed unused 'plan' state
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sections, setSections] = useState<string[]>([]);
@@ -27,7 +27,7 @@ const EventPlan = () => {
     return parsed;
   };
 
-  const generatePlan = async (eventDetails: EventDetails) => {
+  const generatePlan = useCallback(async (eventDetails: EventDetails) => {
     console.log(`[EventPlan.tsx] generatePlan called. Current retryCount: ${retryCount}`);
     try {
       if (retryCount === 0) { // Only set loading true on the very first attempt (not retries)
@@ -44,7 +44,7 @@ const EventPlan = () => {
         throw new Error('No plan was generated from AI service');
       }
 
-      setPlan(generatedPlan);
+      // setPlan(generatedPlan); // Removed: 'plan' state is not used
       const splitSections = parseSections(generatedPlan);
       
       if (splitSections.length === 0) {
@@ -77,7 +77,7 @@ const EventPlan = () => {
         }, 3000);
       }
     }
-  };
+  }, [retryCount]); // Added retryCount as a dependency for useCallback
 
   useEffect(() => {
     console.log("[EventPlan.tsx] useEffect: Fired.");
@@ -126,7 +126,7 @@ const EventPlan = () => {
 
     initializePlan();
 
-  }, []); // Empty dependency array ensures this runs only once on mount (plus StrictMode behavior in dev)
+  }, [generatePlan]); // Added generatePlan to the dependency array
 
 
   const toggleSection = (index: number) => {
