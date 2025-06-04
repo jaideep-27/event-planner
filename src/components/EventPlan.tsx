@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { generateEventPlan, EventDetails } from '../services/ai';
 import { useAuth } from '../context/AuthContext';
 
@@ -19,8 +19,8 @@ const EventPlan = () => {
   const [bookingConfirmationMessage, setBookingConfirmationMessage] = useState<string | null>(null);
   const { user } = useAuth(); // Get user from AuthContext
 
-  // Expanded Mock Function Hall Data
-  const mockFunctionHalls = [
+  // Expanded Mock Function Hall Data - Memoized
+  const mockFunctionHalls = useMemo(() => [
     // Mumbai
     { id: 'm1', name: 'The Sea View Banquet', city: 'Mumbai', location: 'Marine Lines', capacity: 300, price: '₹70,000/day', image: 'https://via.placeholder.com/300x200.png?text=Sea+View+Mumbai' },
     { id: 'm2', name: 'Juhu Grand Hall', city: 'Mumbai', location: 'Juhu', capacity: 500, price: '₹1,20,000/day', image: 'https://via.placeholder.com/300x200.png?text=Juhu+Grand' },
@@ -41,12 +41,12 @@ const EventPlan = () => {
     { id: 'h2', name: 'Hi-Tech City Convention', city: 'Hyderabad', location: 'HITEC City', capacity: 800, price: '₹1,90,000/day', image: 'https://via.placeholder.com/300x200.png?text=HITEC+Convention' },
     { id: 'h3', name: 'Banjara Hills Royal Garden', city: 'Hyderabad', location: 'Banjara Hills', capacity: 500, price: '₹1,30,000/day', image: 'https://via.placeholder.com/300x200.png?text=Banjara+Royal+HYD' },
     { id: 'h4', name: 'Gachibowli Community Center', city: 'Hyderabad', location: 'Gachibowli', capacity: 220, price: '₹50,000/day', image: 'https://via.placeholder.com/300x200.png?text=Gachibowli+Center' },
-  ];
+  ], []); // Empty dependency array for useMemo, so it's created once
 
   useEffect(() => {
     // Simulate fetching function hall data
     setFunctionHalls(mockFunctionHalls);
-  }, [mockFunctionHalls]);
+  }, [mockFunctionHalls]); // Now this dependency is stable
 
 
   const parseSections = (text: string) => {
