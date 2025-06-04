@@ -36,3 +36,24 @@
     transform: rotate(360deg);
   }
 }
+
+.indian-pattern {
+  background-color: #FCFDFE; /* Very light off-white base */
+  background-image: linear-gradient(
+    135deg,
+    #E8F8F5 /* Very pale teal for stripes */ 25%,
+    transparent 25%,
+    transparent 50%,
+    #E8F8F5 /* Very pale teal for stripes */ 50%,
+    #E8F8F5 /* Very pale teal for stripes */ 75%,
+    transparent 75%,
+    transparent 100%
+  );
+  background-size: 56.57px 56.57px; /* Controls the size of the pattern repeats */
+  width: 100%;
+  /* flex-grow: 1; Ensures it takes available space if App.tsx's div is a flex item */
+  /* display: flex; Remove if causing issues with children centering */
+  /* flex-direction: column; Remove if causing issues with children centering */
+  /* align-items: center; Remove if causing issues with children centering */
+  /* justify-content: center; Remove if causing issues with children centering */
+}

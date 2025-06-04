@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { generateEventPlan, EventDetails } from '../services/ai';
+import { useAuth } from '../context/AuthContext';
 
 
 const EventPlan = () => {
@@ -12,6 +13,42 @@ const EventPlan = () => {
   const MAX_RETRIES = 3;
 
   const effectRan = useRef(false); // Ref to track if useEffect has run for initial load
+
+  // States for Function Hall Booking
+  const [functionHalls, setFunctionHalls] = useState<any[]>([]);
+  const [selectedHallForBooking, setSelectedHallForBooking] = useState<any | null>(null);
+  const [bookingConfirmationMessage, setBookingConfirmationMessage] = useState<string | null>(null);
+  const { user } = useAuth(); // Get user from AuthContext
+
+  // Expanded Mock Function Hall Data
+  const mockFunctionHalls = [
+    // Mumbai
+    { id: 'm1', name: 'The Sea View Banquet', city: 'Mumbai', location: 'Marine Lines', capacity: 300, price: '₹70,000/day', image: 'https://via.placeholder.com/300x200.png?text=Sea+View+Mumbai' },
+    { id: 'm2', name: 'Juhu Grand Hall', city: 'Mumbai', location: 'Juhu', capacity: 500, price: '₹1,20,000/day', image: 'https://via.placeholder.com/300x200.png?text=Juhu+Grand' },
+    { id: 'm3', name: 'Andheri Celebration Point', city: 'Mumbai', location: 'Andheri West', capacity: 200, price: '₹55,000/day', image: 'https://via.placeholder.com/300x200.png?text=Andheri+Celeb' },
+    { id: 'm4', name: 'Chembur Community Hall', city: 'Mumbai', location: 'Chembur', capacity: 150, price: '₹40,000/day', image: 'https://via.placeholder.com/300x200.png?text=Chembur+Hall' },
+    // Delhi
+    { id: 'd1', name: 'Imperial Gardens', city: 'Delhi', location: 'Connaught Place', capacity: 600, price: '₹1,50,000/day', image: 'https://via.placeholder.com/300x200.png?text=Imperial+Delhi' },
+    { id: 'd2', name: 'The Royal Palace Hall', city: 'Delhi', location: 'Chanakyapuri', capacity: 400, price: '₹90,000/day', image: 'https://via.placeholder.com/300x200.png?text=Royal+Palace+Delhi' },
+    { id: 'd3', name: 'Saket Convention Center', city: 'Delhi', location: 'Saket', capacity: 700, price: '₹1,80,000/day', image: 'https://via.placeholder.com/300x200.png?text=Saket+Convention' },
+    { id: 'd4', name: 'Karol Bagh Community Hall', city: 'Delhi', location: 'Karol Bagh', capacity: 250, price: '₹60,000/day', image: 'https://via.placeholder.com/300x200.png?text=Karol+Bagh+Hall' },
+    // Bangalore
+    { id: 'b1', name: 'Silicon Valley Convention', city: 'Bangalore', location: 'Electronic City', capacity: 1000, price: '₹2,00,000/day', image: 'https://via.placeholder.com/300x200.png?text=Silicon+Valley+BLR' },
+    { id: 'b2', name: 'Lalbagh Botanical Hall', city: 'Bangalore', location: 'Lalbagh Road', capacity: 350, price: '₹80,000/day', image: 'https://via.placeholder.com/300x200.png?text=Lalbagh+Hall+BLR' },
+    { id: 'b3', name: 'Indiranagar Social Club', city: 'Bangalore', location: 'Indiranagar', capacity: 180, price: '₹65,000/day', image: 'https://via.placeholder.com/300x200.png?text=Indiranagar+Club' },
+    { id: 'b4', name: 'Koramangala Banquet Hall', city: 'Bangalore', location: 'Koramangala', capacity: 450, price: '₹1,10,000/day', image: 'https://via.placeholder.com/300x200.png?text=Koramangala+Banquet' },
+    // Hyderabad
+    { id: 'h1', name: 'Charminar Celebration Hall', city: 'Hyderabad', location: 'Old City', capacity: 300, price: '₹75,000/day', image: 'https://via.placeholder.com/300x200.png?text=Charminar+Hall+HYD' },
+    { id: 'h2', name: 'Hi-Tech City Convention', city: 'Hyderabad', location: 'HITEC City', capacity: 800, price: '₹1,90,000/day', image: 'https://via.placeholder.com/300x200.png?text=HITEC+Convention' },
+    { id: 'h3', name: 'Banjara Hills Royal Garden', city: 'Hyderabad', location: 'Banjara Hills', capacity: 500, price: '₹1,30,000/day', image: 'https://via.placeholder.com/300x200.png?text=Banjara+Royal+HYD' },
+    { id: 'h4', name: 'Gachibowli Community Center', city: 'Hyderabad', location: 'Gachibowli', capacity: 220, price: '₹50,000/day', image: 'https://via.placeholder.com/300x200.png?text=Gachibowli+Center' },
+  ];
+
+  useEffect(() => {
+    // Simulate fetching function hall data
+    setFunctionHalls(mockFunctionHalls);
+  }, []);
+
 
   const parseSections = (text: string) => {
     console.log("[EventPlan.tsx] parseSections - Input (first 100 chars):", text?.substring(0, 100));
@@ -154,6 +191,39 @@ const EventPlan = () => {
     }
   };
 
+  const downloadOrderSummary = (hallDetails: any) => {
+    const summaryContent = `
+      Order Confirmation
+      --------------------
+      Hall Name: ${hallDetails.name}
+      Location: ${hallDetails.location}
+      Capacity: ${hallDetails.capacity}
+      Price: ${hallDetails.price}
+      Booked by: ${user?.username || 'Guest User'} 
+      Booking Date: ${new Date().toLocaleDateString()}
+      --------------------
+      Thank you for your booking!
+      This is a simulated booking confirmation.
+    `;
+    const blob = new Blob([summaryContent.trim()], { type: 'text/plain' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `order_summary_${hallDetails.name.replace(/\\s+/g, '_')}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+  };
+
+  const handleBookHall = (hall: any) => {
+    setSelectedHallForBooking(hall);
+    setBookingConfirmationMessage(`Successfully booked ${hall.name}! Your order summary is being downloaded.`);
+    downloadOrderSummary(hall);
+    // Here you would typically also send this booking data to your backend to store in the user's profile.
+    // For now, we're just showing a message and downloading a summary.
+    setTimeout(() => setBookingConfirmationMessage(null), 7000); // Clear message after some time
+  };
+
   if (error) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -165,7 +235,7 @@ const EventPlan = () => {
     );
   }
 
-  if (isLoading) {
+  if (isLoading && sections.length === 0) { // Ensure loading is only for initial plan, not halls
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
@@ -179,8 +249,42 @@ const EventPlan = () => {
     );
   }
 
+  // Inline styles for the new Function Hall section
+  const hallCardStyle: React.CSSProperties = {
+    border: '1px solid #E0E0E0', // Lighter border
+    borderRadius: '8px',
+    padding: '16px',
+    marginBottom: '16px',
+    backgroundColor: '#fff',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.07)', // Softer shadow
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    color: '#566573' // General text color for card content
+  };
+
+  const hallImageStyle: React.CSSProperties = {
+    width: '100%',
+    maxWidth: '300px',
+    height: 'auto',
+    borderRadius: '4px',
+    marginBottom: '12px'
+  };
+  
+  const bookButtonStyle: React.CSSProperties = {
+    backgroundColor: '#76D7C4', // New primary teal
+    color: 'white',
+    padding: '10px 20px',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '1rem',
+    fontWeight: 'bold',
+    marginTop: '10px'
+  };
+
   return (
-    <div className="container">
+    <div className="container" style={{ paddingBottom: '40px' }}>
       <div className="card">
         <div className="flex justify-between items-center mb-4">
           <h1 className="gradient-text" style={{ fontSize: '2rem' }}>
@@ -196,40 +300,44 @@ const EventPlan = () => {
           </div>
         </div>
 
-        <div className="accordion">
-          {sections.map((section, index) => {
-            const [title, ...content] = section.split('\n');
-            return (
-              <div key={index} className="accordion-item">
-                <button
-                  className="accordion-button"
-                  onClick={() => toggleSection(index)}
-                >
-                  <span className="section-number">{index + 1}.</span>
-                  <span className="section-title">{title}</span>
-                  <span 
-                    className="section-arrow"
-                    style={{ 
-                      transform: `rotate(${openSections[index] ? 180 : 0}deg)`,
-                      transition: 'transform 0.2s'
-                    }}
+        {sections.length > 0 ? (
+          <div className="accordion">
+            {sections.map((section, index) => {
+              const [title, ...content] = section.split('\n');
+              return (
+                <div key={index} className="accordion-item">
+                  <button
+                    className="accordion-button"
+                    onClick={() => toggleSection(index)}
                   >
-                    ▼
-                  </span>
-                </button>
-                {openSections[index] && (
-                  <div className="accordion-content">
-                    {content.map((line, i) => (
-                      <p key={i} style={{ marginBottom: '0.5rem' }}>
-                        {line.trim()}
-                      </p>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                    <span className="section-number">{index + 1}.</span>
+                    <span className="section-title">{title}</span>
+                    <span 
+                      className="section-arrow"
+                      style={{ 
+                        transform: `rotate(${openSections[index] ? 180 : 0}deg)`,
+                        transition: 'transform 0.2s'
+                      }}
+                    >
+                      ▼
+                    </span>
+                  </button>
+                  {openSections[index] && (
+                    <div className="accordion-content">
+                      {content.map((line, i) => (
+                        <p key={i} style={{ marginBottom: '0.5rem' }}>
+                          {line.trim()}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          !isLoading && <p>No event plan sections to display. Try creating a new plan.</p>
+        )}
 
         <button
           className="button w-full mt-4"
@@ -237,6 +345,39 @@ const EventPlan = () => {
         >
           Create Another Event Plan
         </button>
+      </div>
+
+      {/* New Function Hall Booking Section */}
+      <div className="card" style={{ marginTop: '40px' }}>
+        <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '20px', color: '#566573', textAlign: 'center' }}>
+          Book Function Halls
+        </h2>
+        
+        {bookingConfirmationMessage && (
+          <div style={{ padding: '12px 15px', backgroundColor: '#E8F8F5', border: '1px solid #A3E4D7', borderRadius: '4px', color: '#1E8449', marginBottom: '20px', textAlign: 'center', fontSize: '0.9rem' }}>
+            {bookingConfirmationMessage}
+          </div>
+        )}
+
+        {functionHalls.length > 0 ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+            {functionHalls.map(hall => (
+              <div key={hall.id} style={hallCardStyle}>
+                {/* <img src={hall.image} alt={hall.name} style={hallImageStyle} /> */}
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: '10px 0', color: '#4A5568' }}>{hall.name}</h3> {/* Slightly darker for heading */}
+                <p style={{ margin: '4px 0' }}>City: {hall.city}</p>
+                <p style={{ margin: '4px 0' }}>Location: {hall.location}</p>
+                <p style={{ margin: '4px 0' }}>Capacity: {hall.capacity} guests</p>
+                <p style={{ margin: '4px 0', fontWeight: 'bold' }}>Price: {hall.price}</p>
+                <button style={bookButtonStyle} onClick={() => handleBookHall(hall)}>
+                  Book {hall.name}
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p style={{ textAlign: 'center' }}>No function halls available at the moment.</p>
+        )}
       </div>
     </div>
   );
