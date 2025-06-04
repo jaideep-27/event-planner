@@ -11,43 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-// app.use(cors()); // Commented out the simple cors
-
-const allowedOrigins = [
-  'https://event-planner-india.netlify.app',
-  'http://localhost:3000', // For local frontend dev
-  'http://localhost:5000'  // If you ever test backend directly locally with a tool
-];
-
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
-  credentials: true, // If you plan to use cookies or send authorization headers
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // Added PATCH
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'] // Added X-Requested-With
-}));
-
-// Handle preflight requests for all routes
-app.options('*', cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}));
-
+app.use(cors());
 app.use(express.json()); // To parse JSON request bodies
 
 // Define Routes

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { generateEventPlan, EventDetails } from '../services/ai';
 import { useAuth } from '../context/AuthContext';
 
@@ -16,11 +16,12 @@ const EventPlan = () => {
 
   // States for Function Hall Booking
   const [functionHalls, setFunctionHalls] = useState<any[]>([]);
+  const [selectedHallForBooking, setSelectedHallForBooking] = useState<any | null>(null);
   const [bookingConfirmationMessage, setBookingConfirmationMessage] = useState<string | null>(null);
   const { user } = useAuth(); // Get user from AuthContext
 
-  // Expanded Mock Function Hall Data - Memoized
-  const mockFunctionHalls = useMemo(() => [
+  // Expanded Mock Function Hall Data
+  const mockFunctionHalls = [
     // Mumbai
     { id: 'm1', name: 'The Sea View Banquet', city: 'Mumbai', location: 'Marine Lines', capacity: 300, price: '₹70,000/day', image: 'https://via.placeholder.com/300x200.png?text=Sea+View+Mumbai' },
     { id: 'm2', name: 'Juhu Grand Hall', city: 'Mumbai', location: 'Juhu', capacity: 500, price: '₹1,20,000/day', image: 'https://via.placeholder.com/300x200.png?text=Juhu+Grand' },
@@ -41,12 +42,12 @@ const EventPlan = () => {
     { id: 'h2', name: 'Hi-Tech City Convention', city: 'Hyderabad', location: 'HITEC City', capacity: 800, price: '₹1,90,000/day', image: 'https://via.placeholder.com/300x200.png?text=HITEC+Convention' },
     { id: 'h3', name: 'Banjara Hills Royal Garden', city: 'Hyderabad', location: 'Banjara Hills', capacity: 500, price: '₹1,30,000/day', image: 'https://via.placeholder.com/300x200.png?text=Banjara+Royal+HYD' },
     { id: 'h4', name: 'Gachibowli Community Center', city: 'Hyderabad', location: 'Gachibowli', capacity: 220, price: '₹50,000/day', image: 'https://via.placeholder.com/300x200.png?text=Gachibowli+Center' },
-  ], []); // Empty dependency array for useMemo, so it's created once
+  ];
 
   useEffect(() => {
     // Simulate fetching function hall data
     setFunctionHalls(mockFunctionHalls);
-  }, [mockFunctionHalls]); // Now this dependency is stable
+  }, []);
 
 
   const parseSections = (text: string) => {
@@ -215,6 +216,7 @@ const EventPlan = () => {
   };
 
   const handleBookHall = (hall: any) => {
+    setSelectedHallForBooking(hall);
     setBookingConfirmationMessage(`Successfully booked ${hall.name}! Your order summary is being downloaded.`);
     downloadOrderSummary(hall);
     // Here you would typically also send this booking data to your backend to store in the user's profile.
@@ -261,6 +263,14 @@ const EventPlan = () => {
     color: '#566573' // General text color for card content
   };
 
+  const hallImageStyle: React.CSSProperties = {
+    width: '100%',
+    maxWidth: '300px',
+    height: 'auto',
+    borderRadius: '4px',
+    marginBottom: '12px'
+  };
+  
   const bookButtonStyle: React.CSSProperties = {
     backgroundColor: '#76D7C4', // New primary teal
     color: 'white',
@@ -353,6 +363,7 @@ const EventPlan = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
             {functionHalls.map(hall => (
               <div key={hall.id} style={hallCardStyle}>
+                {/* <img src={hall.image} alt={hall.name} style={hallImageStyle} /> */}
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: '10px 0', color: '#4A5568' }}>{hall.name}</h3> {/* Slightly darker for heading */}
                 <p style={{ margin: '4px 0' }}>City: {hall.city}</p>
                 <p style={{ margin: '4px 0' }}>Location: {hall.location}</p>
