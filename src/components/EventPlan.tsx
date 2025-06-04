@@ -16,7 +16,6 @@ const EventPlan = () => {
 
   // States for Function Hall Booking
   const [functionHalls, setFunctionHalls] = useState<any[]>([]);
-  const [selectedHallForBooking, setSelectedHallForBooking] = useState<any | null>(null);
   const [bookingConfirmationMessage, setBookingConfirmationMessage] = useState<string | null>(null);
   const { user } = useAuth(); // Get user from AuthContext
 
@@ -47,7 +46,7 @@ const EventPlan = () => {
   useEffect(() => {
     // Simulate fetching function hall data
     setFunctionHalls(mockFunctionHalls);
-  }, []);
+  }, [mockFunctionHalls]);
 
 
   const parseSections = (text: string) => {
@@ -216,7 +215,6 @@ const EventPlan = () => {
   };
 
   const handleBookHall = (hall: any) => {
-    setSelectedHallForBooking(hall);
     setBookingConfirmationMessage(`Successfully booked ${hall.name}! Your order summary is being downloaded.`);
     downloadOrderSummary(hall);
     // Here you would typically also send this booking data to your backend to store in the user's profile.
@@ -263,14 +261,6 @@ const EventPlan = () => {
     color: '#566573' // General text color for card content
   };
 
-  const hallImageStyle: React.CSSProperties = {
-    width: '100%',
-    maxWidth: '300px',
-    height: 'auto',
-    borderRadius: '4px',
-    marginBottom: '12px'
-  };
-  
   const bookButtonStyle: React.CSSProperties = {
     backgroundColor: '#76D7C4', // New primary teal
     color: 'white',
@@ -363,7 +353,6 @@ const EventPlan = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
             {functionHalls.map(hall => (
               <div key={hall.id} style={hallCardStyle}>
-                {/* <img src={hall.image} alt={hall.name} style={hallImageStyle} /> */}
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: '10px 0', color: '#4A5568' }}>{hall.name}</h3> {/* Slightly darker for heading */}
                 <p style={{ margin: '4px 0' }}>City: {hall.city}</p>
                 <p style={{ margin: '4px 0' }}>Location: {hall.location}</p>
