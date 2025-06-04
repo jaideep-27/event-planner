@@ -51,8 +51,8 @@ app.options('*', cors({
 app.use(express.json()); // To parse JSON request bodies
 
 // Define Routes
-const authRoutes = require('./routes/auth');
-app.use('/api/auth', authRoutes);
+// const authRoutes = require('./routes/auth'); // Temporarily commented out for testing
+// app.use('/api/auth', authRoutes);            // Temporarily commented out for testing
 
 // MongoDB Connection
 const mongoURI = process.env.MONGO_URI;
