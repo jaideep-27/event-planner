@@ -1,7 +1,24 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { generateEventPlan, EventDetails } from '../services/ai';
 import { useAuth } from '../context/AuthContext';
 
+// Define an interface for Hall details
+interface Hall {
+  id: string;
+  name: string;
+  city: string;
+  location: string;
+  capacity: number;
+  price: number; // Changed from string to number
+  image: string;
+}
+
+// Define available time slots
+const TIME_SLOTS = [
+  "09:00 AM - 12:00 PM",
+  "02:00 PM - 05:00 PM",
+  "07:00 PM - 10:00 PM",
+];
 
 const EventPlan = () => {
   // const [plan, setPlan] = useState<string>(''); // Removed unused 'plan' state
@@ -15,40 +32,50 @@ const EventPlan = () => {
   const effectRan = useRef(false); // Ref to track if useEffect has run for initial load
 
   // States for Function Hall Booking
-  const [functionHalls, setFunctionHalls] = useState<any[]>([]);
-  const [selectedHallForBooking, setSelectedHallForBooking] = useState<any | null>(null);
+  const [functionHalls, setFunctionHalls] = useState<Hall[]>([]); // Use Hall interface
+  // selectedHallForBooking is removed as booking now happens with date/time directly
   const [bookingConfirmationMessage, setBookingConfirmationMessage] = useState<string | null>(null);
   const { user } = useAuth(); // Get user from AuthContext
 
-  // Expanded Mock Function Hall Data
-  const mockFunctionHalls = [
+  // State to hold selected date and time slot for each hall
+  const [selectedBookingDetails, setSelectedBookingDetails] = useState<{ [hallId: string]: { date: string; timeSlot: string } }>({});
+  const [currentEventCity, setCurrentEventCity] = useState<string | null>(null);
+
+
+  // Expanded Mock Function Hall Data - Price updated to number
+  const mockFunctionHalls: Hall[] = [
     // Mumbai
-    { id: 'm1', name: 'The Sea View Banquet', city: 'Mumbai', location: 'Marine Lines', capacity: 300, price: '₹70,000/day', image: 'https://via.placeholder.com/300x200.png?text=Sea+View+Mumbai' },
-    { id: 'm2', name: 'Juhu Grand Hall', city: 'Mumbai', location: 'Juhu', capacity: 500, price: '₹1,20,000/day', image: 'https://via.placeholder.com/300x200.png?text=Juhu+Grand' },
-    { id: 'm3', name: 'Andheri Celebration Point', city: 'Mumbai', location: 'Andheri West', capacity: 200, price: '₹55,000/day', image: 'https://via.placeholder.com/300x200.png?text=Andheri+Celeb' },
-    { id: 'm4', name: 'Chembur Community Hall', city: 'Mumbai', location: 'Chembur', capacity: 150, price: '₹40,000/day', image: 'https://via.placeholder.com/300x200.png?text=Chembur+Hall' },
+    { id: 'm1', name: 'The Sea View Banquet', city: 'Mumbai', location: 'Marine Lines', capacity: 300, price: 70000, image: 'https://via.placeholder.com/300x200.png?text=Sea+View+Mumbai' },
+    { id: 'm2', name: 'Juhu Grand Hall', city: 'Mumbai', location: 'Juhu', capacity: 500, price: 120000, image: 'https://via.placeholder.com/300x200.png?text=Juhu+Grand' },
+    { id: 'm3', name: 'Andheri Celebration Point', city: 'Mumbai', location: 'Andheri West', capacity: 200, price: 55000, image: 'https://via.placeholder.com/300x200.png?text=Andheri+Celeb' },
+    { id: 'm4', name: 'Chembur Community Hall', city: 'Mumbai', location: 'Chembur', capacity: 150, price: 40000, image: 'https://via.placeholder.com/300x200.png?text=Chembur+Hall' },
     // Delhi
-    { id: 'd1', name: 'Imperial Gardens', city: 'Delhi', location: 'Connaught Place', capacity: 600, price: '₹1,50,000/day', image: 'https://via.placeholder.com/300x200.png?text=Imperial+Delhi' },
-    { id: 'd2', name: 'The Royal Palace Hall', city: 'Delhi', location: 'Chanakyapuri', capacity: 400, price: '₹90,000/day', image: 'https://via.placeholder.com/300x200.png?text=Royal+Palace+Delhi' },
-    { id: 'd3', name: 'Saket Convention Center', city: 'Delhi', location: 'Saket', capacity: 700, price: '₹1,80,000/day', image: 'https://via.placeholder.com/300x200.png?text=Saket+Convention' },
-    { id: 'd4', name: 'Karol Bagh Community Hall', city: 'Delhi', location: 'Karol Bagh', capacity: 250, price: '₹60,000/day', image: 'https://via.placeholder.com/300x200.png?text=Karol+Bagh+Hall' },
+    { id: 'd1', name: 'Imperial Gardens', city: 'Delhi', location: 'Connaught Place', capacity: 600, price: 150000, image: 'https://via.placeholder.com/300x200.png?text=Imperial+Delhi' },
+    { id: 'd2', name: 'The Royal Palace Hall', city: 'Delhi', location: 'Chanakyapuri', capacity: 400, price: 90000, image: 'https://via.placeholder.com/300x200.png?text=Royal+Palace+Delhi' },
+    { id: 'd3', name: 'Saket Convention Center', city: 'Delhi', location: 'Saket', capacity: 700, price: 180000, image: 'https://via.placeholder.com/300x200.png?text=Saket+Convention' },
+    { id: 'd4', name: 'Karol Bagh Community Hall', city: 'Delhi', location: 'Karol Bagh', capacity: 250, price: 60000, image: 'https://via.placeholder.com/300x200.png?text=Karol+Bagh+Hall' },
     // Bangalore
-    { id: 'b1', name: 'Silicon Valley Convention', city: 'Bangalore', location: 'Electronic City', capacity: 1000, price: '₹2,00,000/day', image: 'https://via.placeholder.com/300x200.png?text=Silicon+Valley+BLR' },
-    { id: 'b2', name: 'Lalbagh Botanical Hall', city: 'Bangalore', location: 'Lalbagh Road', capacity: 350, price: '₹80,000/day', image: 'https://via.placeholder.com/300x200.png?text=Lalbagh+Hall+BLR' },
-    { id: 'b3', name: 'Indiranagar Social Club', city: 'Bangalore', location: 'Indiranagar', capacity: 180, price: '₹65,000/day', image: 'https://via.placeholder.com/300x200.png?text=Indiranagar+Club' },
-    { id: 'b4', name: 'Koramangala Banquet Hall', city: 'Bangalore', location: 'Koramangala', capacity: 450, price: '₹1,10,000/day', image: 'https://via.placeholder.com/300x200.png?text=Koramangala+Banquet' },
+    { id: 'b1', name: 'Silicon Valley Convention', city: 'Bangalore', location: 'Electronic City', capacity: 1000, price: 200000, image: 'https://via.placeholder.com/300x200.png?text=Silicon+Valley+BLR' },
+    { id: 'b2', name: 'Lalbagh Botanical Hall', city: 'Bangalore', location: 'Lalbagh Road', capacity: 350, price: 80000, image: 'https://via.placeholder.com/300x200.png?text=Lalbagh+Hall+BLR' },
+    { id: 'b3', name: 'Indiranagar Social Club', city: 'Bangalore', location: 'Indiranagar', capacity: 180, price: 65000, image: 'https://via.placeholder.com/300x200.png?text=Indiranagar+Club' },
+    { id: 'b4', name: 'Koramangala Banquet Hall', city: 'Bangalore', location: 'Koramangala', capacity: 450, price: 110000, image: 'https://via.placeholder.com/300x200.png?text=Koramangala+Banquet' },
     // Hyderabad
-    { id: 'h1', name: 'Charminar Celebration Hall', city: 'Hyderabad', location: 'Old City', capacity: 300, price: '₹75,000/day', image: 'https://via.placeholder.com/300x200.png?text=Charminar+Hall+HYD' },
-    { id: 'h2', name: 'Hi-Tech City Convention', city: 'Hyderabad', location: 'HITEC City', capacity: 800, price: '₹1,90,000/day', image: 'https://via.placeholder.com/300x200.png?text=HITEC+Convention' },
-    { id: 'h3', name: 'Banjara Hills Royal Garden', city: 'Hyderabad', location: 'Banjara Hills', capacity: 500, price: '₹1,30,000/day', image: 'https://via.placeholder.com/300x200.png?text=Banjara+Royal+HYD' },
-    { id: 'h4', name: 'Gachibowli Community Center', city: 'Hyderabad', location: 'Gachibowli', capacity: 220, price: '₹50,000/day', image: 'https://via.placeholder.com/300x200.png?text=Gachibowli+Center' },
+    { id: 'h1', name: 'Charminar Celebration Hall', city: 'Hyderabad', location: 'Old City', capacity: 300, price: 75000, image: 'https://via.placeholder.com/300x200.png?text=Charminar+Hall+HYD' },
+    { id: 'h2', name: 'Hi-Tech City Convention', city: 'Hyderabad', location: 'HITEC City', capacity: 800, price: 190000, image: 'https://via.placeholder.com/300x200.png?text=HITEC+Convention' },
+    { id: 'h3', name: 'Banjara Hills Royal Garden', city: 'Hyderabad', location: 'Banjara Hills', capacity: 500, price: 130000, image: 'https://via.placeholder.com/300x200.png?text=Banjara+Royal+HYD' },
+    { id: 'h4', name: 'Gachibowli Community Center', city: 'Hyderabad', location: 'Gachibowli', capacity: 220, price: 50000, image: 'https://via.placeholder.com/300x200.png?text=Gachibowli+Center' },
   ];
 
   useEffect(() => {
     // Simulate fetching function hall data
     setFunctionHalls(mockFunctionHalls);
-  }, []);
-
+    // Initialize selectedBookingDetails for each hall
+    const initialBookingDetails: { [hallId: string]: { date: string; timeSlot: string } } = {};
+    mockFunctionHalls.forEach(hall => {
+      initialBookingDetails[hall.id] = { date: '', timeSlot: TIME_SLOTS[0] }; // Default to first time slot
+    });
+    setSelectedBookingDetails(initialBookingDetails);
+  }, [mockFunctionHalls]);
 
   const parseSections = (text: string) => {
     console.log("[EventPlan.tsx] parseSections - Input (first 100 chars):", text?.substring(0, 100));
@@ -148,6 +175,8 @@ const EventPlan = () => {
           console.error("[EventPlan.tsx] initializePlan: Missing required event details in localStorage.");
           throw new Error('Missing required event details');
         }
+        setCurrentEventCity(eventDetails.location); // Set the current event city
+        console.log(`[EventPlan.tsx] initializePlan: Event city set to: ${eventDetails.location}`);
         console.log("[EventPlan.tsx] initializePlan: Event details validated. Calling generatePlan.");
         await generatePlan(eventDetails);
       } catch (error) {
@@ -191,38 +220,106 @@ const EventPlan = () => {
     }
   };
 
-  const downloadOrderSummary = (hallDetails: any) => {
-    const summaryContent = `
-      Order Confirmation
-      --------------------
-      Hall Name: ${hallDetails.name}
-      Location: ${hallDetails.location}
-      Capacity: ${hallDetails.capacity}
-      Price: ${hallDetails.price}
-      Booked by: ${user?.username || 'Guest User'} 
-      Booking Date: ${new Date().toLocaleDateString()}
-      --------------------
-      Thank you for your booking!
-      This is a simulated booking confirmation.
-    `;
-    const blob = new Blob([summaryContent.trim()], { type: 'text/plain' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `order_summary_${hallDetails.name.replace(/\\s+/g, '_')}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
+  // Function to handle changes in date or time slot selection
+  const handleBookingDetailChange = (hallId: string, field: 'date' | 'timeSlot', value: string) => {
+    setSelectedBookingDetails(prev => ({
+      ...prev,
+      [hallId]: {
+        ...prev[hallId],
+        [field]: value,
+      },
+    }));
+  };
+  
+  const handleBookHall = async (hall: Hall, date: string, timeSlot: string) => {
+    if (!user) {
+      alert('Please log in to book a hall.');
+      // Optionally, redirect to login page
+      // window.location.href = '/login'; 
+      return;
+    }
+
+    if (!date) {
+      alert('Please select a date for the booking.');
+      return;
+    }
+    if (!timeSlot) {
+      alert('Please select a time slot for the booking.');
+      return;
+    }
+
+    setBookingConfirmationMessage('Processing your booking...');
+    console.log(`[EventPlan.tsx] handleBookHall: Initiating booking for Hall ID: ${hall.id}, Date: ${date}, Time: ${timeSlot}`);
+
+    const bookingData = {
+      hallId: hall.id,
+      hallName: hall.name,
+      userId: user.id,
+      userName: user.username,
+      bookingDate: date,
+      timeSlot: timeSlot,
+      price: hall.price, // Assuming hall.price is the price for the slot
+    };
+    console.log('[EventPlan.tsx] handleBookHall: Booking data prepared:', bookingData);
+
+    try {
+      console.log('[EventPlan.tsx] handleBookHall: Attempting to POST /api/bookings');
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Add Authorization header if your API requires it
+          // 'Authorization': `Bearer ${user.token}`,
+        },
+        body: JSON.stringify(bookingData),
+      });
+      console.log('[EventPlan.tsx] handleBookHall: Response status from /api/bookings:', response.status);
+
+      const result = await response.json();
+      console.log('[EventPlan.tsx] handleBookHall: Response JSON from /api/bookings:', result);
+
+      if (response.ok) {
+        setBookingConfirmationMessage(
+          `Successfully booked ${hall.name} for ${date} (${timeSlot})! Your ticket is being downloaded.`
+        );
+        console.log('[EventPlan.tsx] handleBookHall: Booking successful. Result ID:', result.id);
+        
+        // Trigger PDF ticket download
+        if (result.id) { // Assuming the backend returns the booking with an id
+          console.log(`[EventPlan.tsx] handleBookHall: Triggering PDF download from /api/bookings/${result.id}/ticket`);
+          window.open(`/api/bookings/${result.id}/ticket`, '_blank');
+        } else {
+          console.error('[EventPlan.tsx] handleBookHall: Booking successful, but no booking ID received for ticket download. Response:', result);
+          setBookingConfirmationMessage(
+            `Successfully booked ${hall.name}! Booking ID missing, cannot download ticket automatically.`
+          );
+        }
+      } else {
+        console.error('[EventPlan.tsx] handleBookHall: Booking failed. Status:', response.status, 'Result:', result);
+        throw new Error(result.message || `Booking failed. Status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Booking error:', error);
+      const errorMessage = (error instanceof Error) ? error.message : 'An unknown error occurred during booking.';
+      setBookingConfirmationMessage(`Booking failed: ${errorMessage}`);
+    }
+
+    // Clear message after some time
+    setTimeout(() => {
+      setBookingConfirmationMessage(null);
+    }, 10000); // Increased timeout for user to read message
   };
 
-  const handleBookHall = (hall: any) => {
-    setSelectedHallForBooking(hall);
-    setBookingConfirmationMessage(`Successfully booked ${hall.name}! Your order summary is being downloaded.`);
-    downloadOrderSummary(hall);
-    // Here you would typically also send this booking data to your backend to store in the user's profile.
-    // For now, we're just showing a message and downloading a summary.
-    setTimeout(() => setBookingConfirmationMessage(null), 7000); // Clear message after some time
-  };
+  const displayedFunctionHalls = useMemo(() => {
+    if (!currentEventCity) {
+      return []; // Don't show any halls until city is known
+    }
+    const cityToFilter = currentEventCity.toLowerCase();
+    console.log(`[EventPlan.tsx] Filtering halls for city: ${cityToFilter}`);
+    const filtered = functionHalls.filter(hall => hall.city.toLowerCase() === cityToFilter);
+    console.log(`[EventPlan.tsx] Found ${filtered.length} halls for ${cityToFilter}`);
+    return filtered;
+  }, [functionHalls, currentEventCity]);
 
   if (error) {
     return (
@@ -251,37 +348,46 @@ const EventPlan = () => {
 
   // Inline styles for the new Function Hall section
   const hallCardStyle: React.CSSProperties = {
-    border: '1px solid #E0E0E0', // Lighter border
+    border: '1px solid #e2e8f0',
     borderRadius: '8px',
-    padding: '16px',
-    marginBottom: '16px',
+    padding: '20px',
+    marginBottom: '20px',
     backgroundColor: '#fff',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.07)', // Softer shadow
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    color: '#566573' // General text color for card content
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    transition: 'transform 0.2s ease-in-out',
+    // ':hover': { // This doesn't work directly in inline styles, handle with state or CSS classes if needed
+    //   transform: 'scale(1.02)'
+    // }
   };
 
-  const hallImageStyle: React.CSSProperties = {
-    width: '100%',
-    maxWidth: '300px',
-    height: 'auto',
-    borderRadius: '4px',
-    marginBottom: '12px'
-  };
-  
   const bookButtonStyle: React.CSSProperties = {
-    backgroundColor: '#76D7C4', // New primary teal
+    backgroundColor: '#4CAF50', // Green
     color: 'white',
     padding: '10px 20px',
     border: 'none',
-    borderRadius: '4px',
+    borderRadius: '5px',
     cursor: 'pointer',
     fontSize: '1rem',
     fontWeight: 'bold',
-    marginTop: '10px'
+    transition: 'background-color 0.2s ease-in-out',
+    marginTop: '10px', // Added margin top for spacing
   };
+
+  const inputStyle: React.CSSProperties = {
+    padding: '8px',
+    margin: '5px 0 10px 0',
+    border: '1px solid #ccc',
+    borderRadius: '4px',
+    width: 'calc(100% - 18px)', // Adjust width to fit padding and border
+  };
+  
+  const labelStyle: React.CSSProperties = {
+    fontWeight: 'bold',
+    fontSize: '0.9rem',
+    marginBottom: '3px',
+    display: 'block',
+  };
+
 
   return (
     <div className="container" style={{ paddingBottom: '40px' }}>
@@ -349,34 +455,77 @@ const EventPlan = () => {
 
       {/* New Function Hall Booking Section */}
       <div className="card" style={{ marginTop: '40px' }}>
-        <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '20px', color: '#566573', textAlign: 'center' }}>
+        <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', color: '#2D3748', marginBottom: '20px', textAlign: 'center' }}>
           Book Function Halls
         </h2>
-        
         {bookingConfirmationMessage && (
-          <div style={{ padding: '12px 15px', backgroundColor: '#E8F8F5', border: '1px solid #A3E4D7', borderRadius: '4px', color: '#1E8449', marginBottom: '20px', textAlign: 'center', fontSize: '0.9rem' }}>
+          <div style={{ backgroundColor: '#C6F6D5', color: '#2F855A', padding: '10px', borderRadius: '5px', marginBottom: '20px', textAlign: 'center' }}>
             {bookingConfirmationMessage}
           </div>
         )}
-
-        {functionHalls.length > 0 ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-            {functionHalls.map(hall => (
+        {displayedFunctionHalls.length > 0 ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+            {displayedFunctionHalls.map(hall => (
               <div key={hall.id} style={hallCardStyle}>
                 {/* <img src={hall.image} alt={hall.name} style={hallImageStyle} /> */}
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: '10px 0', color: '#4A5568' }}>{hall.name}</h3> {/* Slightly darker for heading */}
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: '10px 0', color: '#4A5568' }}>{hall.name}</h3>
                 <p style={{ margin: '4px 0' }}>City: {hall.city}</p>
                 <p style={{ margin: '4px 0' }}>Location: {hall.location}</p>
                 <p style={{ margin: '4px 0' }}>Capacity: {hall.capacity} guests</p>
-                <p style={{ margin: '4px 0', fontWeight: 'bold' }}>Price: {hall.price}</p>
-                <button style={bookButtonStyle} onClick={() => handleBookHall(hall)}>
+                <p style={{ margin: '4px 0', fontWeight: 'bold' }}>Price: ₹{hall.price.toLocaleString()} /slot</p>
+                
+                {/* Date Picker */}
+                <div>
+                  <label htmlFor={`date-${hall.id}`} style={labelStyle}>Select Date:</label>
+                  <input
+                    type="date"
+                    id={`date-${hall.id}`}
+                    style={inputStyle}
+                    value={selectedBookingDetails[hall.id]?.date || ''}
+                    onChange={(e) => handleBookingDetailChange(hall.id, 'date', e.target.value)}
+                    min={new Date().toISOString().split('T')[0]} // Prevent selecting past dates
+                  />
+                </div>
+
+                {/* Time Slot Selector */}
+                <div>
+                  <label htmlFor={`time-${hall.id}`} style={labelStyle}>Select Time Slot:</label>
+                  <select
+                    id={`time-${hall.id}`}
+                    style={inputStyle}
+                    value={selectedBookingDetails[hall.id]?.timeSlot || ''}
+                    onChange={(e) => handleBookingDetailChange(hall.id, 'timeSlot', e.target.value)}
+                  >
+                    {TIME_SLOTS.map(slot => (
+                      <option key={slot} value={slot}>{slot}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <button 
+                  style={bookButtonStyle} 
+                  onClick={() => {
+                    const details = selectedBookingDetails[hall.id];
+                    if (details) {
+                      handleBookHall(hall, details.date, details.timeSlot);
+                    } else {
+                      // Should not happen if initialized correctly
+                      alert("Please select date and time.");
+                    }
+                  }}
+                >
                   Book {hall.name}
                 </button>
               </div>
             ))}
           </div>
         ) : (
-          <p style={{ textAlign: 'center' }}>No function halls available at the moment.</p>
+          <p style={{ textAlign: 'center' }}>
+            {isLoading ? 'Loading event plan and halls...' : 
+              currentEventCity 
+                ? `No function halls listed for ${currentEventCity} in our current mock data. Please check back later or expand our listings!`
+                : 'Determining event city to filter halls...'}
+          </p>
         )}
       </div>
     </div>

@@ -1,6 +1,7 @@
 // eventplanner/src/services/ai.ts
 
-const GROQ_API_KEY = "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";
+// const GROQ_API_KEY = "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"; // Old hardcoded key
+const GROQ_API_KEY = process.env.REACT_APP_GROQ_API_KEY;
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 const MODEL_NAME = "llama-3.3-70b-versatile"; // As specified by user
 
@@ -17,6 +18,11 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 const makeApiCallWithRetry = async (prompt: string, maxRetries: number = 3): Promise<string> => {
   let lastError;
   console.log("[ai.ts] makeApiCallWithRetry: Called with prompt (first 100 chars):", prompt.substring(0,100));
+
+  if (!GROQ_API_KEY) {
+    console.error("[ai.ts] makeApiCallWithRetry: REACT_APP_GROQ_API_KEY is not defined in environment variables.");
+    throw new Error("Groq API key is not configured. Please set REACT_APP_GROQ_API_KEY in your .env file.");
+  }
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     console.log(`[ai.ts] makeApiCallWithRetry: Attempt ${attempt}/${maxRetries}`);

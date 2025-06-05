@@ -18,6 +18,11 @@ app.use(express.json()); // To parse JSON request bodies
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
+// Import booking routes
+const bookingRoutesObject = require('./routes/bookingRoutes'); // This will be { default: router }
+const bookingRoutes = bookingRoutesObject.default; // Access the actual router
+app.use('/api/bookings', bookingRoutes);
+
 // MongoDB Connection
 const mongoURI = process.env.MONGO_URI;
 
